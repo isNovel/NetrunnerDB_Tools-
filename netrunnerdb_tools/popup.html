@@ -3,104 +3,144 @@
 
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="lib/bootstrap.min.css">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            min-width: 280px;
+            width: 350px;
+            background-color: #f8f9fa;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
             padding: 15px;
         }
 
-        .option-section {
-            margin-bottom: 15px;
+        h3 {
+            font-size: 1.4rem;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
         }
 
-        .option-section h4 {
-            margin: 10px 0 5px 0;
-            color: #555;
-            font-size: 14px;
+        h4 {
+            font-size: 1rem;
+            color: #666;
+            border-left: 4px solid #007bff;
+            padding-left: 10px;
+            margin-top: 20px;
+            margin-bottom: 10px;
         }
 
-        .option-item {
+        .column-list {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 0;
+        }
+
+        .column-list li {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            padding: 10px 12px;
             display: flex;
             align-items: center;
-            margin: 6px 0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
         }
 
-        .option-item label {
-            margin-left: 8px;
+        .column-list li:hover {
+            border-color: #007bff;
+            background-color: #f0f7ff;
+        }
+
+        .handle {
+            cursor: move;
+            margin-right: 12px;
+            color: #adb5bd;
+            font-size: 1.2rem;
+        }
+
+        .visibility-toggle {
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
             cursor: pointer;
+            accent-color: #007bff;
         }
 
-        h3 {
-            margin-top: 0;
-            color: #333;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
+        .item-label {
+            flex-grow: 1;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .btn-group-xs>.btn {
+            padding: 2px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .hidden-item {
+            opacity: 0.5;
+            background: #f1f3f5 !important;
+        }
+
+        .hidden-item .item-label {
+            text-decoration: line-through;
+            color: #adb5bd;
+        }
+
+        .save-section {
+            position: sticky;
+            bottom: 0;
+            background: #f8f9fa;
+            padding: 15px 0;
+            border-top: 1px solid #dee2e6;
+            margin-top: 10px;
+        }
+
+        #save-btn {
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 6px rgba(0, 123, 255, 0.2);
+        }
+
+        .column-list li.dragging {
+            opacity: 0.4;
+            border: 2px dashed #007bff;
+            background: #e7f1ff;
+        }
+
+        /* 確保拖拽時滑鼠指標正確 */
+        .handle {
+            cursor: grab;
+            margin-right: 10px;
+            color: #999;
+            user-select: none;
+        }
+
+        .handle:active {
+            cursor: grabbing;
         }
     </style>
 </head>
 
 <body>
-    <h3>NetrunnerDB Tools</h3>
+    <div class="container">
+        <h3>欄位顯示與排序</h3>
 
-    <!-- Runner 設置 -->
-    <div class="option-section">
-        <h4>Runner Show</h4>
-        <div class="option-item">
-            <input type="checkbox" id="runner_cost">
-            <label for="runner_cost">Cost</label>
-        </div>
-        <div class="option-item">
-            <input type="checkbox" id="runner_memory_cost">
-            <label for="runner_memory_cost">Memory Cost</label>
-        </div>
-        <div class="option-item">
-            <input type="checkbox" id="runner_strength">
-            <label for="runner_strength">Strength</label>
-        </div>
-        <div class="option-item">
-            <input type="checkbox" id="runner_influence">
-            <label for="runner_influence">Influence</label>
-        </div>
-        <div class="option-item">
-            <input type="checkbox" id="runner_type">
-            <label for="runner_type">Type</label>
-        </div>
-        <div class="option-item">
-            <input type="checkbox" id="runner_faction">
-            <label for="runner_faction">Faction</label>
+        <h4>Runner 側欄位</h4>
+        <ul id="runner-list" class="column-list"></ul>
+
+        <h4>Corp 側欄位</h4>
+        <ul id="corp-list" class="column-list"></ul>
+
+        <div class="save-section">
+            <button id="save-btn" class="btn btn-primary btn-block">儲存並刷新頁面</button>
         </div>
     </div>
-
-    <!-- Corp 設置 -->
-    <div class="option-section">
-        <h4>Corp Show</h4>
-        <div class="option-item">
-            <input type="checkbox" id="corp_cost">
-            <label for="corp_cost">Cost</label>
-        </div>
-        <div class="option-item">
-            <input type="checkbox" id="corp_trash_cost">
-            <label for="corp_trash_cost">Trash Cost</label>
-        </div>
-        <div class="option-item">
-            <input type="checkbox" id="corp_agenda_point">
-            <label for="corp_agenda_point">Agenda Point</label>
-        </div>
-        <div class="option-item">
-            <input type="checkbox" id="corp_influence">
-            <label for="corp_influence">Influence</label>
-        </div>
-        <div class="option-item">
-            <input type="checkbox" id="corp_type">
-            <label for="corp_type">Type</label>
-        </div>
-        <div class="option-item">
-            <input type="checkbox" id="corp_faction">
-            <label for="corp_faction">Faction</label>
-        </div>
-    </div>
-
     <script src="popup.js"></script>
 </body>
 

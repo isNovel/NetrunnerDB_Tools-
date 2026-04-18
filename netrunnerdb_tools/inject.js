@@ -3,19 +3,11 @@
     console.log('[NRDB強化-Inject-ID] 注入腳本開始執行。');
 
     // 全局變量存儲用戶設置（支持 Runner/Corp 分別設置）
-    var columnSettings = {}; // 你的全域設定物件
-
+    let columnOrder = {};
     try {
-        const scriptSrc = document.currentScript.src;
-        const urlParams = new URLSearchParams(scriptSrc.split('?')[1]);
-        const configParam = urlParams.get('config');
-        if (configParam) {
-            columnSettings = JSON.parse(decodeURIComponent(configParam));
-            console.log('[Inject] 成功接收到同步設定:', columnSettings);
-        }
-    } catch (e) {
-        console.error('[Inject] 解析設定失敗:', e);
-    }
+        const urlParams = new URLSearchParams(document.currentScript.src.split('?')[1]);
+        columnOrder = JSON.parse(decodeURIComponent(urlParams.get('order')));
+    } catch (e) { console.error("Order parse failed", e); }
 
     // 從 storage 讀取用戶設置
 
@@ -102,88 +94,6 @@
         });
     }
 
-    // 根據設置動態生成卡片行的單元格
-    function generateCardCells(record, sideCode) {
-
-        let cells = '';
-        let settings = sideCode === 'runner' ? {
-            cost: columnSettings.runner_cost,
-            memory_cost: columnSettings.runner_memory_cost,
-            strength: columnSettings.runner_strength,
-            influence: columnSettings.runner_influence,
-            type: columnSettings.runner_type,
-            faction: columnSettings.runner_faction
-        } : {
-            cost: columnSettings.corp_cost,
-            trash_cost: columnSettings.corp_trash_cost,
-            agenda_point: columnSettings.corp_agenda_point,
-            influence: columnSettings.corp_influence,
-            type: columnSettings.corp_type,
-            faction: columnSettings.corp_faction
-        };
-        console.log('[NRDB強化-Inject-ID] 欄位設置已更新4:', settings);
-        console.log('[NRDB強化-Inject-ID] sideCode:', sideCode);
-
-        if (sideCode === 'runner') {
-            if (settings.cost) {
-                cells += '<td class="cost" >' + (typeof record.cost !== 'undefined' ? record.cost : '') + '</td>';
-            }
-            if (settings.memory_cost) {
-                cells += '<td class="memory_cost" >' + (typeof record.memory_cost !== 'undefined' ? record.memory_cost : '') + '</td>';
-            }
-            if (settings.strength) {
-                cells += '<td class="strength" >' + (typeof record.strength !== 'undefined' ? record.strength : '') + '</td>';
-            }
-            if (settings.influence) {
-                cells += '<td class="influence influence-' + record.faction_code + '" >';
-                for (var i = 0; i < record.faction_cost; i++) {
-                    cells += "●";
-                }
-                cells += '</td>';
-            }
-            if (settings.type) {
-                cells += '<td class="type" title="' + record.type.name + '"><svg class="typeIcon" aria-label="' + record.type.code + '"><use xlink:href="/images/icons.svg#type-' + record.type.code + '"></use></svg></td>';
-            }
-            if (settings.faction) {
-                var imgsrc = record.faction_code.substr(0, 7) === "neutral" ? "" : '<svg class="typeIcon" aria-label="' + record.faction_code + '"><use xlink:href="/images/icons.svg#faction-' + record.faction_code + '"></use></svg>';
-                cells += '<td class="faction" title="' + record.faction.name + '">' + imgsrc + '</td>';
-            }
-
-        } else {
-
-            if (settings.cost) {
-                if (record.type.name == 'Agenda') {
-                    cells += '<td class="cost" >' + (typeof record.advancement_cost !== 'undefined' ? record.cost : '') + '</td>';
-                } else {
-                    cells += '<td class="cost" >' + (typeof record.cost !== 'undefined' ? record.cost : '') + '</td>';
-                }
-            }
-            if (settings.trash_cost) {
-                cells += '<td class="trash_cost" >' + (typeof record.trash_cost !== 'undefined' ? record.trash_cost : '') + '</td>';
-            }
-            if (settings.agenda_point) {
-                cells += '<td class="agenda_point" >' + (typeof record.agenda_point !== 'undefined' ? record.agenda_point : '') + '</td>';
-            }
-            if (settings.influence) {
-                cells += '<td class="influence influence-' + record.faction_code + '" >';
-                for (var i = 0; i < record.faction_cost; i++) {
-                    cells += "●";
-                }
-                cells += '</td>';
-            }
-            if (settings.type) {
-                cells += '<td class="type" title="' + record.type.name + '"><svg class="typeIcon" aria-label="' + record.type.code + '"><use xlink:href="/images/icons.svg#type-' + record.type.code + '"></use></svg></td>';
-            }
-            if (settings.faction) {
-                var imgsrc = record.faction_code.substr(0, 7) === "neutral" ? "" : '<svg class="typeIcon" aria-label="' + record.faction_code + '"><use xlink:href="/images/icons.svg#faction-' + record.faction_code + '"></use></svg>';
-                cells += '<td class="faction" title="' + record.faction.name + '">' + imgsrc + '</td>';
-            }
-        }
-
-
-
-        return cells;
-    }
 
     function newBuildDiv(record) {
 
@@ -225,19 +135,35 @@
                 } else { unique = '♦ ' }
 
                 var sideCode = Identity.side_code;
-                var tmphtml = '<tr class="card-container" data-index="'
-                    + record.code
-                    + '"><td><div class="btn-group" data-toggle="buttons">'
-                    + radios
-                    + '</div></td><td><a class="card" href="'
-                    + Routing.generate('cards_zoom', { card_code: record.code })
-                    + '" data-target="#cardModal" data-remote="false" data-toggle="modal">'
-                    + unique + record.title + '</a> ' + get_influence_penalty_icons(record)
-                    + '</td>';
+                const currentOrder = columnOrder[sideCode];
+                let tmphtml = `<tr class="card-container" data-index="${record.code}">`;
+                console.log(currentOrder);
 
-                // 根據設置動態添加單元格
-                tmphtml += generateCardCells(record, sideCode);
-
+                currentOrder.forEach(col => {
+                    if (!col.visible) return;
+                    switch (col.id) {
+                        case 'indeck':
+                            tmphtml += `<td><div class="btn-group" data-toggle="buttons">${radios}</div></td>`; break;
+                        case 'title':
+                            tmphtml += `<td><a class="card" href="${Routing.generate('cards_zoom', { card_code: record.code })}">${record.uniqueness ? '♦ ' : ''}${record.title}</a></td>`; break;
+                        case 'cost':
+                            let costnum = record.type.name === 'Agenda' ? record.advancement_cost : record.cost;
+                            tmphtml += `<td class="cost">${costnum ?? 'X'}</td>`; break;
+                        case 'memory_cost':
+                            tmphtml += `<td class="memory_cost">${record.memory_cost ?? ''}</td>`; break;
+                        case 'trash_cost':
+                            tmphtml += `<td class="trash_cost">${record.trash_cost ?? ''}</td>`; break;
+                        case 'strength':
+                            tmphtml += `<td class="strength">${record.strength ?? ''}</td>`; break;
+                        case 'faction_cost':
+                            tmphtml += `<td class="influence influence-${record.faction_code}">${influ}</td>`; break;
+                        case 'type_code':
+                            tmphtml += `<td class="type"><svg class="typeIcon"><use xlink:href="/images/icons.svg#type-${record.type.code}"></use></svg></td>`; break;
+                        case 'faction_code':
+                            let imgsrc = record.faction_code.includes("neutral") ? "" : `<svg class="typeIcon"><use xlink:href="/images/icons.svg#faction-${record.faction_code}"></use></svg>`;
+                            tmphtml += `<td class="faction">${imgsrc}</td>`; break;
+                    }
+                });
                 tmphtml += '</tr>';
                 div = $(tmphtml);
                 break;
