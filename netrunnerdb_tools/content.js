@@ -1,6 +1,26 @@
 // NetrunnerDB 簡化收藏擴展 - Content Script
 console.log('[NetrunnerDB Extension] 加载中...');
 
+// 全局變量來存儲用戶設置（支持 Runner/Corp 分別設置）
+let columnSettings = {
+    // Runner 欄位
+    runner_cost: true,
+    runner_memory_cost: true,
+    runner_strength: true,
+    runner_influence: true,
+    runner_type: true,
+    runner_faction: true,
+    // Corp 欄位
+    corp_cost: true,
+    corp_trash_cost: true,
+    corp_agenda_point: true,
+    corp_influence: true,
+    corp_type: true,
+    corp_faction: true
+};
+
+
+
 // 修正後的 modifycollection 函式，會等待元素出現
 function insertEmptyFilterRow() {
 
@@ -35,54 +55,76 @@ function insertEmptyFilterRow() {
 
 }
 
+// 根據設置動態生成表頭
+function generateTableHeader(identityType) {
+    let headers = `
+        <th style="min-width:85px"><a href="#" data-sort="indeck">Quantity</a></th>
+        <th><a href="#" data-sort="title">Name</a><span class="caret"></span></th>
+    `;
+
+    if (identityType === 'runner') {
+        // Runner 專屬欄位
+        if (columnSettings.runner_cost) {
+            headers += '<th><a href="#" data-sort="cost">Cost</a></th>';
+        }
+        if (columnSettings.runner_memory_cost) {
+            headers += '<th><a href="#" data-sort="memory_cost" title="Memory Cost">M_Cost</a></th>';
+        }
+        if (columnSettings.runner_strength) {
+            headers += '<th><a href="#" data-sort="strength"  title="Strength">S.</a></th>';
+        }
+        if (columnSettings.runner_influence) {
+            headers += '<th><a href="#" data-sort="faction_cost" title="Influence">I.</a></th>';
+        }
+        if (columnSettings.runner_type) {
+            headers += '<th class="type"><a href="#" data-sort="type_code" title="Type">T.</a></th>';
+        }
+        if (columnSettings.runner_faction) {
+            headers += '<th class="faction"><a href="#" data-sort="faction_code" title="Faction">F.</a></th>';
+        }
+    } else {
+        // Corp 專屬欄位
+        if (columnSettings.corp_cost) {
+            headers += '<th><a href="#" data-sort="cost">Cost</a></th>';
+        }
+        if (columnSettings.corp_trash_cost) {
+            headers += '<th><a href="#" data-sort="trash_cost" title="Trash Cost">T_Cost</a></th>';
+        }
+        if (columnSettings.corp_agenda_point) {
+            headers += '<th><a href="#" data-sort="agenda_point" titls="Agenda Point"{}></a></th>';
+        }
+        if (columnSettings.corp_influence) {
+            headers += '<th><a href="#" data-sort="faction_cost" title="Influence">I.</a></th>';
+        }
+        if (columnSettings.corp_type) {
+            headers += '<th class="type"><a href="#" data-sort="type_code" title="Type">T.</a></th>';
+        }
+        if (columnSettings.corp_faction) {
+            headers += '<th class="faction"><a href="#" data-sort="faction_code" title="Faction">F.</a></th>';
+        }
+    }
+
+    return `
+        <tr>
+            ${headers}
+        </tr>
+    `;
+}
+
 function modifycollection(identityType) {
     const collectionElement = document.getElementById('collection');
 
     if (collectionElement) {
         const tableHead = collectionElement.querySelector('thead');
         if (tableHead) {
-            if (identityType === 'runner') {
-                const newHeaderContent = `
-                <tr>
-                    <th style="min-width:85px"><a href="#" data-sort="indeck">Quantity</a></th>
-                    <th><a href="#" data-sort="title">Name</a><span class="caret"></span></th>
-                    <th><a href="#" data-sort="cost">Cost</a></th>
-                    <th><a href="#" data-sort="memory_cost">Memory Cost</a></th>
-                    <th><a href="#" data-sort="strength">Strength</a></th>
-                    <th><a href="#" data-sort="faction_cost" title="Influence">I.</a></th>
-                    <th class="type"><a href="#" data-sort="type_code" title="Type">T.</a></th>
-                    <th class="faction"><a href="#" data-sort="faction_code" title="Faction">F.</a></th>
-                </tr>
-            `;
+            const newHeaderContent = generateTableHeader(identityType);
+            tableHead.innerHTML = newHeaderContent;
 
-                // 3. 替換 <thead> 的內部 HTML
-                tableHead.innerHTML = newHeaderContent;
-            } else {
-                const newHeaderContent = `
-                <tr>
-                    <th style="min-width:85px"><a href="#" data-sort="indeck">Quantity</a></th>
-                    <th><a href="#" data-sort="title">Name</a><span class="caret"></span></th>
-                    <th><a href="#" data-sort="cost">Cost</a></th>
-                    <th><a href="#" data-sort="trash_cost">Trash Cost</a></th>
-                    <th><a href="#" data-sort="faction_cost" title="Influence">I.</a></th>
-                    <th class="type"><a href="#" data-sort="type_code" title="Type">T.</a></th>
-                    <th class="faction"><a href="#" data-sort="faction_code" title="Faction">F.</a></th>
-                </tr>
-            `;
-                tableHead.innerHTML = newHeaderContent;
-
-            }
-
-
-            // 3. 替換 <thead> 的內部 HTML
-
-            console.log('🎉 <thead> 內容已成功替換為您的客製化版本。');
+            console.log('🎉 <thead> 內容已成功替換為您的客製化版本。', identityType);
 
         } else {
             console.error("找不到表格的 <thead> 元素。");
         }
-
-        // ***** 在此處添加您的 DOM 修改邏輯 *****
 
     } else {
         // 元素尚未出現，延遲 100 毫秒後再次檢查
@@ -95,7 +137,10 @@ function modifycollection(identityType) {
 // 注入脚本到页面上下文
 function injectScript() {
     const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('inject.js');
+    const settingsStr = encodeURIComponent(JSON.stringify(columnSettings));
+    script.src = chrome.runtime.getURL('inject.js') + '?config=' + settingsStr;
+
+    (document.head || document.documentElement).appendChild(script);
 
     script.onload = function () {
         console.log('[NetrunnerDB Extension] inject.js 注入成功');
@@ -106,49 +151,66 @@ function injectScript() {
         console.error('[NetrunnerDB Extension] inject.js 注入失败');
     };
 
-    (document.head || document.documentElement).appendChild(script);
 }
 
 // 等待页面加载完成后初始化
 function initExtension() {
     console.log('[NetrunnerDB Extension] 初始化中...');
 
+    // 首先加載用戶設置
+
+
     const currentPath = window.location.pathname;
     console.log('[NetrunnerDB Extension] 当前路径:', currentPath);
-
-
-    // 1. 插入空的 HTML 結構 (在隔離環境中執行)
-    insertEmptyFilterRow();
-    console.log('[NetrunnerDB Extension] SEND:', currentPath);
-
-
 
     if (currentPath.includes('/deck/edit/') || currentPath.includes('/deck/build/')) {
         console.log('[NetrunnerDB Extension] 检测到牌库编辑页面');
 
+        insertEmptyFilterRow();
+
+
         // 無論頁面狀態如何，都先確保 DOM 載入後再注入和嘗試修改
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', injectScript);
-            // 在 DOM 載入後，開始檢查 collection 元素是否出現
-        } else {
-            injectScript();
-            // 如果已經載入完成，直接開始檢查
-            const deckElement = document.getElementById('deck');
+        if (typeof chrome !== 'undefined' && chrome.storage) {
+            chrome.storage.sync.get(Object.keys(columnSettings), function (result) {
+                // 更新所有設置，使用默認值
+                Object.keys(columnSettings).forEach(function (key) {
+                    if (result[key] !== undefined) {
+                        columnSettings[key] = result[key];
+                    }
+                });
+                console.log('[NetrunnerDB Extension] 欄位設置已載入:', columnSettings);
 
-            if (deckElement) {
-                deckElement.classList.remove('col-md-6');
-                deckElement.classList.add('col-md-5');
-                const neighborElement = deckElement.nextElementSibling;
-                if (neighborElement) {
-                    neighborElement.classList.remove('col-md-6');
-                    neighborElement.classList.add('col-md-7');
-
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', injectScript);
+                    // 在 DOM 載入後，開始檢查 collection 元素是否出現
                 } else {
-                    console.warn("找不到相鄰的目標元素。");
+                    injectScript();
+                    // 如果已經載入完成，直接開始檢查
+                    const deckElement = document.getElementById('deck');
+
+                    if (deckElement) {
+                        deckElement.classList.remove('col-md-6');
+                        deckElement.classList.add('col-md-5');
+                        const neighborElement = deckElement.nextElementSibling;
+                        if (neighborElement) {
+                            neighborElement.classList.remove('col-md-6');
+                            neighborElement.classList.add('col-md-7');
+
+                        } else {
+                            console.warn("找不到相鄰的目標元素。");
+                        }
+
+
+                    }
                 }
-
-
-            }
+                // 如果collection元素已存在，重新應用設置
+                const collectionElement = document.getElementById('collection');
+                if (collectionElement) {
+                    const identityType = window.sessionIdentityType ||
+                        (window.location.pathname.includes('/deck/build/') ? 'runner' : 'corp');
+                    modifycollection(identityType);
+                }
+            });
         }
     }
 }
@@ -167,6 +229,7 @@ window.addEventListener("message", function listener(event) {
 
         // 收到訊號後，安全地發送您的數據 payload
         identityType = event.data.id;
+        window.sessionIdentityType = identityType; // 保存session級別的identity類型
         console.log('[Content.js] 成功從 inject.js 接收到數據:', identityType);
 
         // 3. 呼叫您的 modifycollection 函式，並傳入數據

@@ -2,6 +2,24 @@
 (function () {
     console.log('[NRDB強化-Inject-ID] 注入腳本開始執行。');
 
+    // 全局變量存儲用戶設置（支持 Runner/Corp 分別設置）
+    var columnSettings = {}; // 你的全域設定物件
+
+    try {
+        const scriptSrc = document.currentScript.src;
+        const urlParams = new URLSearchParams(scriptSrc.split('?')[1]);
+        const configParam = urlParams.get('config');
+        if (configParam) {
+            columnSettings = JSON.parse(decodeURIComponent(configParam));
+            console.log('[Inject] 成功接收到同步設定:', columnSettings);
+        }
+    } catch (e) {
+        console.error('[Inject] 解析設定失敗:', e);
+    }
+
+    // 從 storage 讀取用戶設置
+
+
     function waitForNRDB(callback, attempts = 150) {
         if (typeof window.NRDB !== 'undefined' &&
             typeof window.NRDB.data !== 'undefined' &&
@@ -83,7 +101,92 @@
             counter++;
         });
     }
+
+    // 根據設置動態生成卡片行的單元格
+    function generateCardCells(record, sideCode) {
+
+        let cells = '';
+        let settings = sideCode === 'runner' ? {
+            cost: columnSettings.runner_cost,
+            memory_cost: columnSettings.runner_memory_cost,
+            strength: columnSettings.runner_strength,
+            influence: columnSettings.runner_influence,
+            type: columnSettings.runner_type,
+            faction: columnSettings.runner_faction
+        } : {
+            cost: columnSettings.corp_cost,
+            trash_cost: columnSettings.corp_trash_cost,
+            agenda_point: columnSettings.corp_agenda_point,
+            influence: columnSettings.corp_influence,
+            type: columnSettings.corp_type,
+            faction: columnSettings.corp_faction
+        };
+        console.log('[NRDB強化-Inject-ID] 欄位設置已更新4:', settings);
+        console.log('[NRDB強化-Inject-ID] sideCode:', sideCode);
+
+        if (sideCode === 'runner') {
+            if (settings.cost) {
+                cells += '<td class="cost" >' + (typeof record.cost !== 'undefined' ? record.cost : '') + '</td>';
+            }
+            if (settings.memory_cost) {
+                cells += '<td class="memory_cost" >' + (typeof record.memory_cost !== 'undefined' ? record.memory_cost : '') + '</td>';
+            }
+            if (settings.strength) {
+                cells += '<td class="strength" >' + (typeof record.strength !== 'undefined' ? record.strength : '') + '</td>';
+            }
+            if (settings.influence) {
+                cells += '<td class="influence influence-' + record.faction_code + '" >';
+                for (var i = 0; i < record.faction_cost; i++) {
+                    cells += "●";
+                }
+                cells += '</td>';
+            }
+            if (settings.type) {
+                cells += '<td class="type" title="' + record.type.name + '"><svg class="typeIcon" aria-label="' + record.type.code + '"><use xlink:href="/images/icons.svg#type-' + record.type.code + '"></use></svg></td>';
+            }
+            if (settings.faction) {
+                var imgsrc = record.faction_code.substr(0, 7) === "neutral" ? "" : '<svg class="typeIcon" aria-label="' + record.faction_code + '"><use xlink:href="/images/icons.svg#faction-' + record.faction_code + '"></use></svg>';
+                cells += '<td class="faction" title="' + record.faction.name + '">' + imgsrc + '</td>';
+            }
+
+        } else {
+
+            if (settings.cost) {
+                if (record.type.name == 'Agenda') {
+                    cells += '<td class="cost" >' + (typeof record.advancement_cost !== 'undefined' ? record.cost : '') + '</td>';
+                } else {
+                    cells += '<td class="cost" >' + (typeof record.cost !== 'undefined' ? record.cost : '') + '</td>';
+                }
+            }
+            if (settings.trash_cost) {
+                cells += '<td class="trash_cost" >' + (typeof record.trash_cost !== 'undefined' ? record.trash_cost : '') + '</td>';
+            }
+            if (settings.agenda_point) {
+                cells += '<td class="agenda_point" >' + (typeof record.agenda_point !== 'undefined' ? record.agenda_point : '') + '</td>';
+            }
+            if (settings.influence) {
+                cells += '<td class="influence influence-' + record.faction_code + '" >';
+                for (var i = 0; i < record.faction_cost; i++) {
+                    cells += "●";
+                }
+                cells += '</td>';
+            }
+            if (settings.type) {
+                cells += '<td class="type" title="' + record.type.name + '"><svg class="typeIcon" aria-label="' + record.type.code + '"><use xlink:href="/images/icons.svg#type-' + record.type.code + '"></use></svg></td>';
+            }
+            if (settings.faction) {
+                var imgsrc = record.faction_code.substr(0, 7) === "neutral" ? "" : '<svg class="typeIcon" aria-label="' + record.faction_code + '"><use xlink:href="/images/icons.svg#faction-' + record.faction_code + '"></use></svg>';
+                cells += '<td class="faction" title="' + record.faction.name + '">' + imgsrc + '</td>';
+            }
+        }
+
+
+
+        return cells;
+    }
+
     function newBuildDiv(record) {
+
         var influ = "";
         for (var i = 0; i < record.faction_cost; i++) {
             influ += "●";
@@ -115,45 +218,13 @@
         var div = '';
         switch (Number(NRDB.settings.getItem('display-columns'))) {
             case 1:
-
                 var imgsrc = record.faction_code.substr(0, 7) === "neutral" ? "" : '<svg class="typeIcon" aria-label="' + record.faction_code + '"><use xlink:href="/images/icons.svg#faction-' + record.faction_code + '"></use></svg>';
-                var costnum = '';
-                var trash_cost = record.trash_cost;
-                var memorycost = record.memory_cost;
-                var strength = record.strength;
                 var unique = record.uniqueness;
                 if (unique == false) {
                     unique = '';
                 } else { unique = '♦ ' }
 
-
-
-                if (typeof trash_cost === 'undefined') {
-                    trash_cost = '';
-                }
-                if (typeof memorycost === 'undefined') {
-                    memorycost = '';
-                }
-                if (typeof strength === 'undefined') {
-                    strength = '';
-                }
-
-
-                if (record.type.name == 'Agenda') {
-                    costnum = record.advancement_cost;
-
-                } else if (record.type.name == 'Identity') {
-                    costnum = '';
-                } else {
-                    costnum = record.cost;
-                }
-
-                if (costnum === null) {
-                    costnum = 'X';
-                }
-
-
-
+                var sideCode = Identity.side_code;
                 var tmphtml = '<tr class="card-container" data-index="'
                     + record.code
                     + '"><td><div class="btn-group" data-toggle="buttons">'
@@ -162,19 +233,12 @@
                     + Routing.generate('cards_zoom', { card_code: record.code })
                     + '" data-target="#cardModal" data-remote="false" data-toggle="modal">'
                     + unique + record.title + '</a> ' + get_influence_penalty_icons(record)
-                    + '</td><td class="cost">' + costnum + '</td>';
-                if (Identity.side_code === 'runner') {
-                    tmphtml = tmphtml + '<td class="memory_cost" >' + memorycost + '</td>';
-                }
-                else {
-                    tmphtml = tmphtml + '<td class="trash_cost" >' + trash_cost + '</td>';
-                }
-                tmphtml = tmphtml + '<td class="strength" >' + strength + '</td>';
-                tmphtml = tmphtml + '<td class="influence influence-' + record.faction_code
-                    + '">' + influ + '</td><td class="type" title="' + record.type.name
-                    + '"><svg class="typeIcon" aria-label="' + record.type.code + '"><use xlink:href="/images/icons.svg#type-' + record.type.code + '"></use></svg>'
-                    + '</td><td class="faction" title="' + record.faction.name + '">'
-                    + imgsrc + '</td></tr>';
+                    + '</td>';
+
+                // 根據設置動態添加單元格
+                tmphtml += generateCardCells(record, sideCode);
+
+                tmphtml += '</tr>';
                 div = $(tmphtml);
                 break;
 
@@ -217,7 +281,7 @@
         return div;
     }
 
-   
+
 
     function new_update_deck(options) {
         var restrainOneColumn = false;
@@ -575,7 +639,6 @@
 
 
 
-
     function new_handle_input_change(event) {
         var div = $(this).closest('.filter');
         if ($(this).parent().hasClass('newfilter')) {
@@ -706,9 +769,9 @@
 
         // 1. NEW 按鈕的 HTML
         const newButtonHTML = `
-            <label class="btn btn-default btn-sm" 
-                    data-code="${name}" 
-                    title="${name}" 
+            <label class="btn btn-default btn-sm"
+                    data-code="${name}"
+                    title="${name}"
                     data-original-title="${name}">
                 <input type="checkbox" name="${value}">
                 ${name}
@@ -717,7 +780,7 @@
 
         // 2. 填充按鈕 HTML
         container.append(newButtonHTML);
-         const newButtonLabel = container.find('label:last');
+        const newButtonLabel = container.find('label:last');
         // 3. 初始化 Bootstrap 按鈕
         //container.button();
         newButtonLabel.tooltip({ container: 'body' });
@@ -739,6 +802,8 @@
     }, false);
 
     waitForNRDB(() => {
+        // 加載用戶設置
+
         window.build_div = newBuildDiv;
         window.update_filtered = new_update_filtered;
         $('#pack_code,.search-buttons').off('change', 'label', window.handle_input_change);

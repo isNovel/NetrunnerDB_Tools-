@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            min-width: 280px;
+            padding: 15px;
+        }
+
+        .option-section {
+            margin-bottom: 15px;
+        }
+
+        .option-section h4 {
+            margin: 10px 0 5px 0;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            margin: 6px 0;
+        }
+
+        .option-item label {
+            margin-left: 8px;
+            cursor: pointer;
+        }
+
+        h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>NetrunnerDB Tools</h3>
+
+    <!-- Runner 設置 -->
+    <div class="option-section">
+        <h4>Runner Show</h4>
+        <div class="option-item">
+            <input type="checkbox" id="runner_cost">
+            <label for="runner_cost">Cost</label>
+        </div>
+        <div class="option-item">
+            <input type="checkbox" id="runner_memory_cost">
+            <label for="runner_memory_cost">Memory Cost</label>
+        </div>
+        <div class="option-item">
+            <input type="checkbox" id="runner_strength">
+            <label for="runner_strength">Strength</label>
+        </div>
+        <div class="option-item">
+            <input type="checkbox" id="runner_influence">
+            <label for="runner_influence">Influence</label>
+        </div>
+        <div class="option-item">
+            <input type="checkbox" id="runner_type">
+            <label for="runner_type">Type</label>
+        </div>
+        <div class="option-item">
+            <input type="checkbox" id="runner_faction">
+            <label for="runner_faction">Faction</label>
+        </div>
+    </div>
+
+    <!-- Corp 設置 -->
+    <div class="option-section">
+        <h4>Corp Show</h4>
+        <div class="option-item">
+            <input type="checkbox" id="corp_cost">
+            <label for="corp_cost">Cost</label>
+        </div>
+        <div class="option-item">
+            <input type="checkbox" id="corp_trash_cost">
+            <label for="corp_trash_cost">Trash Cost</label>
+        </div>
+        <div class="option-item">
+            <input type="checkbox" id="corp_agenda_point">
+            <label for="corp_agenda_point">Agenda Point</label>
+        </div>
+        <div class="option-item">
+            <input type="checkbox" id="corp_influence">
+            <label for="corp_influence">Influence</label>
+        </div>
+        <div class="option-item">
+            <input type="checkbox" id="corp_type">
+            <label for="corp_type">Type</label>
+        </div>
+        <div class="option-item">
+            <input type="checkbox" id="corp_faction">
+            <label for="corp_faction">Faction</label>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>
