@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "NetrunnerDB Filter Tool",
+  "name": "NetrunnerDB Filter Tools",
   "version": "1.0",
-  "description": "NetrunnerDB Filter Tool",
+  "description": "NetrunnerDB Filter Tools",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
